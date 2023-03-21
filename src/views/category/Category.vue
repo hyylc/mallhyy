@@ -1,11 +1,11 @@
 <template>
-    <h2>搜索</h2>
+    <h2>分类</h2>
 </template>
 
 
 <script>
     export default {
-        name: "Sear",
+        name: "Category",
     }
 </script>
 

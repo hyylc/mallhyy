@@ -10,10 +10,8 @@
 
   export default {
     name: 'GoodsList',
-    data() {
-      return {
-
-      }
+    data(){
+      return {}
     },
     props: {
       goods: {

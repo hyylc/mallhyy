@@ -14,7 +14,7 @@
   
     #tab-bar{
       display: flex;
-      background-color: rgb(232, 223, 223);
+      background-color: #faf2f2;
   
       /* 固定在屏幕下方 */
       position: fixed;

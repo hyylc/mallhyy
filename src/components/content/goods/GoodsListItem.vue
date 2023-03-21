@@ -1,6 +1,6 @@
 <template>
-    <div class="goods-item">
-        <img :src="goodsItem.show.img" alt="">
+    <div class="goods-item" @click="itemClick">
+        <img :src="showImage" alt="" @load="imageLoad">
         <div class="goods-info">
             <p>{{ goodsItem.title }}</p>
             <span class="price">{{ goodsItem.price }}</span>
@@ -11,9 +11,12 @@
 
 
 <script>
+
   export default {
     name: 'GoodsListItem',
-    
+    data() {
+      return {}
+    },
     props: {
         goodsItem: {
             type: Object,
@@ -21,6 +24,34 @@
                 return  {}
             }
         }
+    },
+
+    computed: {
+      showImage() {
+        return this.goodsItem.image || this.goodsItem.show.img
+      }
+    },
+
+
+    methods: {
+      imageLoad() {
+        // console.log('监听图片')
+        // 区分监听首页的事件还是详情页的事件
+        if (this.$route.path.indexOf('/detail') >= 0){
+          // console.log('首页')
+          this.$bus.$emit('detailItemImageLoad')
+        }
+        else if (this.$route.path.indexOf('/home') >= 0){
+          // console.log('详情')
+          this.$bus.$emit('homeItemImageLoad')
+        }
+       
+        
+      },
+      itemClick() {
+        // console.log('tiao')
+        this.$router.push('/detail/' + this.goodsItem.iid)
+      }
     }
   }
 

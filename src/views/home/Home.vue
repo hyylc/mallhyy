@@ -5,6 +5,12 @@
       <div slot="center">商城</div>
     </nav-bar>
 
+    <tab-control :titles="['流行', '新款', '精选' ]"
+                  @tabClick="tabClick"
+                  ref="tabControl1"
+                  class="tab-control" v-show="isTabFixed"/>
+
+
     <scroll class="content"
             ref="scroll"
             :probe-type="3" 
@@ -23,15 +29,15 @@
       </swiper> -->
 
       <!-- 2.封装的轮播图 -->
-      <HomeSwiper :banners="banners"></HomeSwiper>
+      <HomeSwiper :banners="banners" @swiperImageLoad="swiperImageLoad"></HomeSwiper>
       <!-- 封装的推荐信息 -->
       <recommend-view :recommends="recommends"/>
       <!-- 封装的封面图片 -->
       <feature-view></feature-view>
       <!-- 控制显示内容 -->
-      <tab-control :titles="['流行', '新款', '精选' ]" 
-                  class="tab-control"
-                  @tabClick="tabClick"/>
+      <tab-control :titles="['流行', '新款', '精选' ]"
+                  @tabClick="tabClick"
+                  ref="tabControl2"/>
       <!-- 商品列表 -->
       <goods-list :goods="showGoods"></goods-list>
 
@@ -61,8 +67,8 @@
   // 三、方法
   // 导入网络请求
   import { getHomeMultidata, getHomeGoods } from 'network/home'
-
-
+  import { debounced } from '@/common/utils';
+  import { backTopMixin } from '@/common/mixin';
 
 
   export default {
@@ -90,9 +96,12 @@
           },
           currentType: 'pop',
           scroll: null,
-          isShowBackTop: false
+          tabOffsetTop: 0,
+          isTabFixed: false,
+          saveY: 0
         }
       },
+      mixins: [backTopMixin],
       computed: {
         showGoods() {
           return this.goods[this.currentType].list
@@ -120,6 +129,15 @@
         // 封面图片组件
         FeatureView
       },
+      mounted() {
+        // 1.监听goodsItem中图片加载完成
+        const refresh = debounced(this.$refs.scroll.refresh, 500)
+        this.$bus.$on('homeItemImageLoad', () => {
+          // console.log('home----')
+          refresh()
+        })
+
+      },
       methods: {
         // 事件监听的方法
         tabClick(index) {
@@ -135,16 +153,31 @@
               this.currentType = 'sell'
             break;
           }
+          this.$refs.tabControl1.currentType = index
+          this.$refs.tabControl2.currentType = index
         },
         backClick() {
           // 使用组件的scrollTo方法
           this.$refs.scroll.scrollTo(0, 0)
         },
         contentScroll(position) {
-          this.isShowBackTop = (-position.y) > 1000
+          // 1.判断BackTop是否显示
+          // this.isShowBackTop = (-position.y) > BACK_POSITION
+          this.listenShowBackTop(position)
+
+          // 2.决定tabControl是否吸顶（position: fixed）
+          this.isTabFixed = (-position.y) > this.tabOffsetTop
+          
         },
         loadMore() {
           this.getHomeGoods(this.currentType)
+        },
+        
+        // 获取tabControl的offsetTop，但是组件没有offsetTop，要去template拿元素的offsetTop
+        // 要等图片加载完后去拿offsetTop，否则高度不对
+        // 轮播图的图片加载完后，取这个offsetTop，而且只需要发出一次事件
+        swiperImageLoad() {
+          this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop
         },
 
 
@@ -184,6 +217,19 @@
         this.getHomeGoods('pop')
         this.getHomeGoods('new')
         this.getHomeGoods('sell')
+      },
+      destroyed() {
+        // console.log('destoryed')
+      },
+      activated() {
+        // console.log('activated')
+        this.$refs.scroll.refresh()
+        this.$refs.scroll.scrollTo(0, this.saveY, 0)
+        
+      },
+      deactivated() {
+        // console.log('deactivated')
+        this.saveY = this.$refs.scroll.scroll.y
       }
   }
 </script>
@@ -207,17 +253,10 @@
 }
 
 .tab-control {
-  /* 添加吸顶功能 */
-  position: sticky;
-  top: 44px;
-
-  /* 背景颜色 */
-  background-color:rgb(244, 243, 243);
-  padding-top: 10px;
-
+  position: relative;
   z-index: 9;
-}
-
+  line-height: 40px;
+} 
   .content {
     height: calc(100vh - 93px);
     overflow: hidden;
